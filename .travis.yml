@@ -1,0 +1,22 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t cyclopspirate/react-test -f ./client/Dockerfile.dev ./client # run tests using the DEVELOPMENT dockerfile in the CLIENT directory
+
+script:
+  - docker run cyclopspirate/react-test npm test -- --coverage
+
+after_success:
+  - docker build -t cyclopspirate/multi-client ./client # build context for client is ./client
+  - docker build -t cyclopspirate/multi-nginx ./nginx
+  - docker build -t cyclopspirate/multi-server ./server
+  - docker build -t cyclopspirate/multi-worker ./worker
+  # Login to the Docker CLI - We 'echo' in the PASSWORD to the NEXT command, which is the docker-login command
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take those images and push them to docker hub
+  - docker push cyclopspirate/multi-client
+  - docker push cyclopspirate/multi-nginx
+  - docker push cyclopspirate/multi-server
+  - docker push cyclopspirate/multi-worker
